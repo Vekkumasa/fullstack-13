@@ -14,10 +14,19 @@ const userFinderByUsername = async (req, res, next) => {
 
 router.get('/', async (req, res) => {
   const users = await User.findAll({ 
-    include: {
-      model: Blog,
-      attributes: { exclude: ['userId'] }
-    }
+    include:[{
+          model: Blog,
+          attributes: { exclude: ['userId'] }
+        },
+        {
+          model: Blog,
+          as: 'listedBlogs',
+          attributes: { exclude: ['userId']},
+          through: {
+            attributes: []
+          },
+        },
+      ]  
   })
   res.json(users)
 })
@@ -34,12 +43,34 @@ router.post('/', async (req, res) => {
   }
 });
 
-router.get('/:id', userFinderById, async (req, res) => {
-  if (req.user) {
-    res.json(req.user)
-  } else {
-    res.status(404).send({ error: 'User does not exist.' });
+router.get('/:id', async (req, res) => {
+  try {
+    const user = await User.findByPk(req.params.id, { 
+      attributes: { exclude: [''] } ,
+      include:[{
+          model: Blog,
+          attributes: { exclude: ['userId'] }
+        },
+        {
+          model: Blog,
+          as: 'listedBlogs',
+          attributes: { exclude: ['userId']},
+          through: {
+            attributes: []
+          },
+        },
+      ]
+    })
+    if (user) {
+      res.json(user)
+    } else {
+      res.status(404).send({ error: 'User does not exist.' });
+    }
+  } catch (error) {
+    console.log('ERROR:', error.message);
+    return res.status(500).send({ error: `Error: ${error.message}` });
   }
+  
 })
 
 router.put('/:username', userFinderByUsername, async (req, res) => {
