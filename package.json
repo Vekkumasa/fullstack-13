@@ -9,7 +9,8 @@
     "express-async-errors": "^3.1.1",
     "jsonwebtoken": "^8.5.1",
     "pg": "^8.7.3",
-    "sequelize": "^6.18.0"
+    "sequelize": "^6.18.0",
+    "umzug": "^3.1.1"
   },
   "devDependencies": {
     "nodemon": "^2.0.15"

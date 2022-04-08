@@ -1,4 +1,5 @@
 const router = require('express').Router()
+const { create } = require('lodash')
 const { User, Blog } = require('../models')
 
 const userFinderById = async (req, res, next) => {
@@ -7,14 +8,12 @@ const userFinderById = async (req, res, next) => {
 }
 
 const userFinderByUsername = async (req, res, next) => {
-  console.log('etsitään', req.params.username)
   req.user = await User.findOne({where: { username: req.params.username }})
-  console.log('löydetty', req.user)
   next()
 }
 
 router.get('/', async (req, res) => {
-  const users = await User.findAll({
+  const users = await User.findAll({ 
     include: {
       model: Blog,
       attributes: { exclude: ['userId'] }
@@ -24,9 +23,16 @@ router.get('/', async (req, res) => {
 })
 
 router.post('/', async (req, res) => {
-  const user = await User.create(req.body)
-  res.json(user)
-})
+  const { username, name } = req.body;
+  try {
+    const user = await User.create({ username, name });
+    res.json(user);
+  } catch (error) {
+    res.status(500).send({
+      error: `An error occured while trying to create a user: ${error.message}`
+    });
+  }
+});
 
 router.get('/:id', userFinderById, async (req, res) => {
   if (req.user) {
