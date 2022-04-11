@@ -1,11 +1,6 @@
 const router = require('express').Router()
-const { create } = require('lodash')
 const { User, Blog, ReadingList } = require('../models')
-
-const userFinderById = async (req, res, next) => {
-  req.user = await User.findByPk(req.params.id)
-  next()
-}
+const { Op, Sequelize } = require('sequelize')
 
 const userFinderByUsername = async (req, res, next) => {
   req.user = await User.findOne({where: { username: req.params.username }})
@@ -42,33 +37,36 @@ router.post('/', async (req, res) => {
     });
   }
 });
-/*
-id: 2,
-username: "martti@gmail.com",
-name: "Martin Fowler",
-createdAt: "2022-04-08T11:59:17.247Z",
-updatedAt: "2022-04-08T11:59:17.247Z",
-admin: null,
-disabled: null,
-blogs: [
-listedBlogs: [
-*/
+
 router.get('/:id', async (req, res) => {
   try {
-    const readingList = await ReadingList.findOne({ where: { userId: req.params.id }})
-    console.log('readinglist:', readingList)
+      let filter = false;
+      let booleanFilter
+    if (req.query.read) {
+      booleanFilter = req.query.read === "true"
+      filter = true;
+    }
+
+    const readingList = await ReadingList.findAll({ where: { userId: req.params.id }})
+    let listToShow
+    if (filter) {
+      listToShow = readingList.filter(blog => blog.dataValues.read === booleanFilter)
+    } else {
+      listToShow = readingList
+    }
+    
+    console.log(listToShow)
     const user = await User.findByPk(req.params.id, { 
-      attributes: { exclude: [''] } ,
+      attributes: { exclude: [''] },
+      //where,
       include:[{
           model: Blog,
           attributes: { exclude: ['userId'] }
         },
         {
           model: Blog,
-          as: 'listedBlogs',
-          attributes: { exclude: ['userId', 'author', 'url', 'likes', 'year']},
-          
-          through: {
+          as: 'listedBlogs',       
+          through: {     
             attributes: []
           },
         },
@@ -82,10 +80,7 @@ router.get('/:id', async (req, res) => {
         createdAt: user.createdAt,
         updatedAd: user.updatedAt,
         blogs: user.blogs,
-        listedBlogs: {
-          id: readingList.id,
-          read: readingList.read
-        }
+        listedBlogs: listToShow
       })
     } else {
       res.status(404).send({ error: 'User does not exist.' });
