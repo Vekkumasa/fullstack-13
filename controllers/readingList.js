@@ -1,11 +1,16 @@
 const router = require('express').Router()
-const User = require('../models/user')
-const ReadingList = require('../models/readingList');
-const Blog = require('../models/blog')
+const { ReadingList, User } = require('../models')
+const { tokenExtractor } = require('../util/tokenExtractor');
 
-router.post('/', async (request, response) => {
-  const body = request.body
-
+router.post('/', tokenExtractor, async (req, res) => {
+  try {
+    const user = await User.findByPk(req.decodedToken.id)
+    const readingList = await ReadingList.create({ userId: user.id, blogId: req.body.blogId })
+    res.json(readingList)
+  } catch (error) {
+    res.status(404).send({ error: 'Error' });
+  }
+  
 })
 
 module.exports = router

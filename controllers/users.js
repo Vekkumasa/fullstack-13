@@ -1,6 +1,6 @@
 const router = require('express').Router()
 const { create } = require('lodash')
-const { User, Blog } = require('../models')
+const { User, Blog, ReadingList } = require('../models')
 
 const userFinderById = async (req, res, next) => {
   req.user = await User.findByPk(req.params.id)
@@ -42,9 +42,21 @@ router.post('/', async (req, res) => {
     });
   }
 });
-
+/*
+id: 2,
+username: "martti@gmail.com",
+name: "Martin Fowler",
+createdAt: "2022-04-08T11:59:17.247Z",
+updatedAt: "2022-04-08T11:59:17.247Z",
+admin: null,
+disabled: null,
+blogs: [
+listedBlogs: [
+*/
 router.get('/:id', async (req, res) => {
   try {
+    const readingList = await ReadingList.findOne({ where: { userId: req.params.id }})
+    console.log('readinglist:', readingList)
     const user = await User.findByPk(req.params.id, { 
       attributes: { exclude: [''] } ,
       include:[{
@@ -54,7 +66,8 @@ router.get('/:id', async (req, res) => {
         {
           model: Blog,
           as: 'listedBlogs',
-          attributes: { exclude: ['userId']},
+          attributes: { exclude: ['userId', 'author', 'url', 'likes', 'year']},
+          
           through: {
             attributes: []
           },
@@ -62,7 +75,18 @@ router.get('/:id', async (req, res) => {
       ]
     })
     if (user) {
-      res.json(user)
+      res.json({
+        id: user.id,
+        username: user.username,
+        name: user.name,
+        createdAt: user.createdAt,
+        updatedAd: user.updatedAt,
+        blogs: user.blogs,
+        listedBlogs: {
+          id: readingList.id,
+          read: readingList.read
+        }
+      })
     } else {
       res.status(404).send({ error: 'User does not exist.' });
     }
